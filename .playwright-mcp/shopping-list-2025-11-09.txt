@@ -1,0 +1,16 @@
+SHOPPING LIST - 11/8/2025
+Items to Reorder: 3
+Estimated Total Cost: $2986.50
+==================================================
+
+USB-C Cable (ELEC-002)
+  Current: 8 | Need: 142 units | Est. Cost: $461.50
+  Supplier: TechSupply Co
+
+Cotton T-Shirt (CLTH-001)
+  Current: 0 | Need: 200 units | Est. Cost: $1700.00
+  Supplier: FashionHub
+
+Cutting Board (HOME-002)
+  Current: 5 | Need: 55 units | Est. Cost: $825.00
+  Supplier: HomeGoods Plus

@@ -1,0 +1,1357 @@
+
+import React, { useState, useEffect } from 'react';
+import { PlusCircle, Package, TrendingUp, AlertTriangle, Download, Edit2, Trash2, X, Search, BarChart3, PieChart, DollarSign, ShoppingCart, ArrowUpRight, ArrowDownRight, Calendar, Tag, MapPin, FileText, Printer, CheckSquare, Square, Upload, RefreshCw, Info, Undo2 } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const InventoryTracker = () => {
+  const getSampleData = () => ({
+    products: [
+      { id: '1', sku: 'ELEC-001', name: 'Wireless Mouse', category: 'Electronics', quantity: 45, costPrice: 12.50, salePrice: 24.99, supplier: 'TechSupply Co', location: 'Warehouse A-1', reorderPoint: 15, minStock: 10, maxStock: 100, lastRestocked: '2025-10-15', taxRate: 0.08 },
+      { id: '2', sku: 'ELEC-002', name: 'USB-C Cable', category: 'Electronics', quantity: 8, costPrice: 3.25, salePrice: 9.99, supplier: 'TechSupply Co', location: 'Warehouse A-1', reorderPoint: 20, minStock: 15, maxStock: 150, lastRestocked: '2025-09-20', taxRate: 0.08 },
+      { id: '3', sku: 'ELEC-003', name: 'Bluetooth Speaker', category: 'Electronics', quantity: 22, costPrice: 28.00, salePrice: 59.99, supplier: 'Audio Direct', location: 'Warehouse A-2', reorderPoint: 10, minStock: 8, maxStock: 50, lastRestocked: '2025-10-25', taxRate: 0.08 },
+      { id: '4', sku: 'CLTH-001', name: 'Cotton T-Shirt', category: 'Clothing', quantity: 0, costPrice: 8.50, salePrice: 19.99, supplier: 'FashionHub', location: 'Warehouse B-1', reorderPoint: 25, minStock: 20, maxStock: 200, lastRestocked: '2025-08-10', taxRate: 0.06 },
+      { id: '5', sku: 'CLTH-002', name: 'Denim Jeans', category: 'Clothing', quantity: 15, costPrice: 22.00, salePrice: 49.99, supplier: 'FashionHub', location: 'Warehouse B-1', reorderPoint: 12, minStock: 10, maxStock: 80, lastRestocked: '2025-10-30', taxRate: 0.06 },
+      { id: '6', sku: 'HOME-001', name: 'Ceramic Mug', category: 'Home & Kitchen', quantity: 67, costPrice: 4.75, salePrice: 12.99, supplier: 'HomeGoods Plus', location: 'Warehouse C-1', reorderPoint: 30, minStock: 25, maxStock: 200, lastRestocked: '2025-11-01', taxRate: 0.08 },
+      { id: '7', sku: 'HOME-002', name: 'Cutting Board', category: 'Home & Kitchen', quantity: 5, costPrice: 15.00, salePrice: 34.99, supplier: 'HomeGoods Plus', location: 'Warehouse C-1', reorderPoint: 15, minStock: 10, maxStock: 60, lastRestocked: '2025-09-15', taxRate: 0.08 },
+      { id: '8', sku: 'HOME-003', name: 'Glass Storage Set', category: 'Home & Kitchen', quantity: 31, costPrice: 18.50, salePrice: 39.99, supplier: 'KitchenPro', location: 'Warehouse C-2', reorderPoint: 20, minStock: 15, maxStock: 100, lastRestocked: '2025-10-20', taxRate: 0.08 }
+    ],
+    movements: [
+      { id: 'm1', productId: '2', productName: 'USB-C Cable', productSku: 'ELEC-002', type: 'out', quantity: 5, notes: 'Bulk order', date: '2025-11-06', timestamp: '2025-11-06T10:30:00Z' },
+      { id: 'm2', productId: '6', productName: 'Ceramic Mug', productSku: 'HOME-001', type: 'in', quantity: 50, notes: 'Restock', date: '2025-11-01', timestamp: '2025-11-01T08:30:00Z' },
+      { id: 'm3', productId: '4', productName: 'Cotton T-Shirt', productSku: 'CLTH-001', type: 'out', quantity: 12, notes: 'Retail sale', date: '2025-11-04', timestamp: '2025-11-04T09:15:00Z' }
+    ]
+  });
+
+  const [products, setProducts] = useState([]);
+  const [movements, setMovements] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showMovement, setShowMovement] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingMovement, setEditingMovement] = useState(null);
+  const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [undoStack, setUndoStack] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const [productForm, setProductForm] = useState({
+    sku: '', name: '', category: '', quantity: 0, costPrice: 0, salePrice: 0,
+    supplier: '', location: '', reorderPoint: 10, minStock: 5, maxStock: 100, taxRate: 0.08
+  });
+
+  const [movementForm, setMovementForm] = useState({
+    productId: '', type: 'in', quantity: 0, notes: '',
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  // Initialize - check if user has data, if not show welcome
+  useEffect(() => {
+    const savedProducts = localStorage.getItem('inventoryProducts');
+    const savedMovements = localStorage.getItem('inventoryMovements');
+    const savedThreshold = localStorage.getItem('lowStockThreshold');
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    
+    if (savedProducts && savedMovements) {
+      // User has existing data
+      try {
+        const parsedProducts = JSON.parse(savedProducts);
+        const parsedMovements = JSON.parse(savedMovements);
+        setProducts(parsedProducts);
+        setMovements(parsedMovements);
+        setIsDemoMode(false);
+      } catch (e) {
+        console.error('Error loading data:', e);
+        loadDemoData();
+      }
+    } else {
+      // New user - show welcome or load demo
+      if (!hasSeenWelcome) {
+        setShowWelcome(true);
+        localStorage.setItem('hasSeenWelcome', 'true');
+      }
+      loadDemoData();
+    }
+    
+    if (savedThreshold) setLowStockThreshold(parseInt(savedThreshold));
+  }, []);
+
+  // Save to localStorage only when NOT in demo mode
+  useEffect(() => {
+    if (!isDemoMode && products.length > 0) {
+      localStorage.setItem('inventoryProducts', JSON.stringify(products));
+    }
+  }, [products, isDemoMode]);
+
+  useEffect(() => {
+    if (!isDemoMode && movements.length > 0) {
+      localStorage.setItem('inventoryMovements', JSON.stringify(movements));
+    }
+  }, [movements, isDemoMode]);
+
+  useEffect(() => {
+    localStorage.setItem('lowStockThreshold', lowStockThreshold.toString());
+  }, [lowStockThreshold]);
+
+  const loadDemoData = () => {
+    const demo = getSampleData();
+    setProducts(demo.products);
+    setMovements(demo.movements);
+    setIsDemoMode(true);
+  };
+
+  const startFresh = () => {
+    if (confirm('This will clear all your data and start fresh. Are you sure?')) {
+      setProducts([]);
+      setMovements([]);
+      setUndoStack([]);
+      localStorage.removeItem('inventoryProducts');
+      localStorage.removeItem('inventoryMovements');
+      setIsDemoMode(false);
+      setShowWelcome(false);
+    }
+  };
+
+  const switchToRealMode = () => {
+    setIsDemoMode(false);
+    // Save current demo data as starting point
+    localStorage.setItem('inventoryProducts', JSON.stringify(products));
+    localStorage.setItem('inventoryMovements', JSON.stringify(movements));
+  };
+
+  const validateProduct = (formData) => {
+    const errors = {};
+    
+    if (!formData.sku || formData.sku.trim() === '') {
+      errors.sku = 'SKU is required';
+    } else {
+      // Check for duplicate SKU
+      const duplicate = products.find(p => 
+        p.sku.toLowerCase() === formData.sku.toLowerCase() && 
+        p.id !== editingProduct?.id
+      );
+      if (duplicate) {
+        errors.sku = 'SKU already exists';
+      }
+    }
+    
+    if (!formData.name || formData.name.trim() === '') {
+      errors.name = 'Product name is required';
+    }
+    
+    if (parseFloat(formData.costPrice) < 0) {
+      errors.costPrice = 'Cost price cannot be negative';
+    }
+    
+    if (parseFloat(formData.salePrice) < 0) {
+      errors.salePrice = 'Sale price cannot be negative';
+    }
+    
+    if (parseFloat(formData.salePrice) < parseFloat(formData.costPrice)) {
+      errors.salePrice = 'Sale price should be higher than cost price';
+    }
+    
+    if (parseFloat(formData.quantity) < 0) {
+      errors.quantity = 'Quantity cannot be negative';
+    }
+
+    if (parseFloat(formData.reorderPoint) < 0) {
+      errors.reorderPoint = 'Reorder point cannot be negative';
+    }
+
+    if (parseFloat(formData.maxStock) <= parseFloat(formData.reorderPoint)) {
+      errors.maxStock = 'Max stock must be greater than reorder point';
+    }
+    
+    return errors;
+  };
+
+  const handleAddProduct = () => {
+    const errors = validateProduct(productForm);
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    const newProduct = {
+      ...productForm,
+      id: editingProduct?.id || Date.now().toString(),
+      quantity: parseFloat(productForm.quantity) || 0,
+      costPrice: parseFloat(productForm.costPrice) || 0,
+      salePrice: parseFloat(productForm.salePrice) || 0,
+      reorderPoint: parseFloat(productForm.reorderPoint) || 10,
+      minStock: parseFloat(productForm.minStock) || 5,
+      maxStock: parseFloat(productForm.maxStock) || 100,
+      taxRate: parseFloat(productForm.taxRate) || 0,
+      lastRestocked: new Date().toISOString().split('T')[0]
+    };
+
+    if (editingProduct) {
+      // Save to undo stack
+      addToUndo('edit', editingProduct);
+      setProducts(products.map(p => p.id === editingProduct.id ? newProduct : p));
+    } else {
+      setProducts([...products, newProduct]);
+    }
+
+    resetProductForm();
+  };
+
+  const resetProductForm = () => {
+    setProductForm({
+      sku: '', name: '', category: '', quantity: 0, costPrice: 0, salePrice: 0,
+      supplier: '', location: '', reorderPoint: 10, minStock: 5, maxStock: 100, taxRate: 0.08
+    });
+    setValidationErrors({});
+    setShowAddProduct(false);
+    setEditingProduct(null);
+  };
+
+  const handleMovement = () => {
+    if (!movementForm.productId || !movementForm.quantity || movementForm.quantity <= 0) {
+      alert('Please select a product and enter a valid quantity');
+      return;
+    }
+
+    const product = products.find(p => p.id === movementForm.productId);
+    const qty = parseFloat(movementForm.quantity);
+    const newQuantity = movementForm.type === 'in' ? product.quantity + qty : product.quantity - qty;
+
+    if (newQuantity < 0) {
+      alert(`Insufficient stock! Current stock: ${product.quantity}, Requested: ${qty}`);
+      return;
+    }
+
+    // Save old state for undo
+    addToUndo('movement', { product, quantity: product.quantity });
+
+    setProducts(products.map(p => 
+      p.id === movementForm.productId ? { 
+        ...p, 
+        quantity: newQuantity, 
+        lastRestocked: movementForm.type === 'in' ? movementForm.date : p.lastRestocked 
+      } : p
+    ));
+
+    const newMovement = {
+      id: editingMovement?.id || Date.now().toString(),
+      productId: movementForm.productId,
+      productName: product.name,
+      productSku: product.sku,
+      type: movementForm.type,
+      quantity: qty,
+      notes: movementForm.notes,
+      date: movementForm.date,
+      timestamp: new Date().toISOString()
+    };
+
+    if (editingMovement) {
+      setMovements(movements.map(m => m.id === editingMovement.id ? newMovement : m));
+    } else {
+      setMovements([newMovement, ...movements]);
+    }
+
+    setMovementForm({
+      productId: '', type: 'in', quantity: 0, notes: '',
+      date: new Date().toISOString().split('T')[0]
+    });
+    setShowMovement(false);
+    setEditingMovement(null);
+  };
+
+  const deleteProduct = (id) => {
+    const product = products.find(p => p.id === id);
+    if (confirm(`Delete ${product.name}? This will also remove all associated movements.`)) {
+      addToUndo('delete', product);
+      setProducts(products.filter(p => p.id !== id));
+      setMovements(movements.filter(m => m.productId !== id));
+      setSelectedProducts(selectedProducts.filter(sid => sid !== id));
+    }
+  };
+
+  const deleteMovement = (id) => {
+    const movement = movements.find(m => m.id === id);
+    if (confirm('Delete this movement? This will NOT adjust product quantities.')) {
+      addToUndo('deleteMovement', movement);
+      setMovements(movements.filter(m => m.id !== id));
+    }
+  };
+
+  const editProduct = (product) => {
+    setEditingProduct(product);
+    setProductForm(product);
+    setValidationErrors({});
+    setShowAddProduct(true);
+  };
+
+  const editMovement = (movement) => {
+    setEditingMovement(movement);
+    setMovementForm({
+      productId: movement.productId,
+      type: movement.type,
+      quantity: movement.quantity,
+      notes: movement.notes,
+      date: movement.date
+    });
+    setShowMovement(true);
+  };
+
+  const addToUndo = (action, data) => {
+    setUndoStack([...undoStack, { action, data, timestamp: Date.now() }]);
+    // Keep only last 10 actions
+    if (undoStack.length > 10) {
+      setUndoStack(undoStack.slice(-10));
+    }
+  };
+
+  const undo = () => {
+    if (undoStack.length === 0) return;
+    
+    const lastAction = undoStack[undoStack.length - 1];
+    
+    switch(lastAction.action) {
+      case 'delete':
+        setProducts([...products, lastAction.data]);
+        break;
+      case 'edit':
+        setProducts(products.map(p => p.id === lastAction.data.id ? lastAction.data : p));
+        break;
+      // Add more undo cases as needed
+    }
+    
+    setUndoStack(undoStack.slice(0, -1));
+  };
+
+  const toggleSelectProduct = (id) => {
+    if (selectedProducts.includes(id)) {
+      setSelectedProducts(selectedProducts.filter(sid => sid !== id));
+    } else {
+      setSelectedProducts([...selectedProducts, id]);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    }
+  };
+
+  const bulkDelete = () => {
+    if (selectedProducts.length === 0) return;
+    if (confirm(`Delete ${selectedProducts.length} products?`)) {
+      const deletedProducts = products.filter(p => selectedProducts.includes(p.id));
+      addToUndo('bulkDelete', deletedProducts);
+      setProducts(products.filter(p => !selectedProducts.includes(p.id)));
+      setMovements(movements.filter(m => !selectedProducts.includes(m.productId)));
+      setSelectedProducts([]);
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['SKU', 'Name', 'Category', 'Quantity', 'Cost Price', 'Sale Price', 'Margin %', 'Tax Rate', 'Supplier', 'Location', 'Reorder Point'];
+    const rows = products.map(p => [
+      p.sku, p.name, p.category, p.quantity, p.costPrice, p.salePrice,
+      (((p.salePrice - p.costPrice) / p.costPrice) * 100).toFixed(1),
+      (p.taxRate * 100).toFixed(0) + '%',
+      p.supplier, p.location, p.reorderPoint
+    ]);
+
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const exportData = () => {
+    const data = {
+      products,
+      movements,
+      lowStockThreshold,
+      exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  };
+
+  const importData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.products && data.movements) {
+          if (confirm('This will replace all current data. Continue?')) {
+            setProducts(data.products);
+            setMovements(data.movements);
+            if (data.lowStockThreshold) setLowStockThreshold(data.lowStockThreshold);
+            setIsDemoMode(false);
+            alert('Data imported successfully!');
+          }
+        } else {
+          alert('Invalid backup file format');
+        }
+      } catch (error) {
+        alert('Error reading file: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Calculations
+  const totalProducts = products.length;
+  const totalUnits = products.reduce((sum, p) => sum + p.quantity, 0);
+  const totalValue = products.reduce((sum, p) => sum + (p.quantity * p.costPrice), 0);
+  const potentialRevenue = products.reduce((sum, p) => sum + (p.quantity * p.salePrice), 0);
+  const potentialProfit = potentialRevenue - totalValue;
+  const totalTaxLiability = products.reduce((sum, p) => sum + (p.quantity * p.salePrice * p.taxRate), 0);
+  const avgMargin = totalValue > 0 ? ((potentialProfit / totalValue) * 100) : 0;
+  const lowStockItems = products.filter(p => p.quantity > 0 && p.quantity <= p.reorderPoint);
+  const outOfStock = products.filter(p => p.quantity === 0);
+  const inStock = products.filter(p => p.quantity > p.reorderPoint);
+
+  // Category analytics
+  const categories = [...new Set(products.map(p => p.category))].filter(Boolean);
+  const categoryData = categories.map(cat => {
+    const catProducts = products.filter(p => p.category === cat);
+    const value = catProducts.reduce((sum, p) => sum + (p.quantity * p.costPrice), 0);
+    const revenue = catProducts.reduce((sum, p) => sum + (p.quantity * p.salePrice), 0);
+    const units = catProducts.reduce((sum, p) => sum + p.quantity, 0);
+    return {
+      name: cat,
+      value: value,
+      revenue: revenue,
+      profit: revenue - value,
+      count: catProducts.length,
+      units: units
+    };
+  });
+
+  // Filter and sort products
+  const filteredProducts = products
+    .filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           (p.supplier && p.supplier.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesCategory = filterCategory === 'all' || p.category === filterCategory;
+      const matchesStatus = filterStatus === 'all' ||
+                           (filterStatus === 'low' && p.quantity > 0 && p.quantity <= p.reorderPoint) ||
+                           (filterStatus === 'out' && p.quantity === 0) ||
+                           (filterStatus === 'in-stock' && p.quantity > p.reorderPoint);
+      return matchesSearch && matchesCategory && matchesStatus;
+    })
+    .sort((a, b) => {
+      let aVal, bVal;
+      switch(sortBy) {
+        case 'name': aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
+        case 'sku': aVal = a.sku; bVal = b.sku; break;
+        case 'quantity': aVal = a.quantity; bVal = b.quantity; break;
+        case 'value': aVal = a.quantity * a.costPrice; bVal = b.quantity * b.costPrice; break;
+        case 'margin': aVal = (a.salePrice - a.costPrice) / a.costPrice; bVal = (b.salePrice - b.costPrice) / b.costPrice; break;
+        default: aVal = a.name; bVal = b.name;
+      }
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 mb-6 text-white">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Enterprise Inventory System</h1>
+              <p className="text-blue-100 text-lg flex items-center gap-2">
+                Advanced Analytics • Real-Time Tracking
+                {isDemoMode && (
+                  <span className="px-3 py-1 bg-amber-500 text-white text-sm font-bold rounded-full flex items-center gap-1">
+                    <Info size={14} />
+                    DEMO MODE
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              {undoStack.length > 0 && (
+                <button
+                  onClick={undo}
+                  className="px-4 py-3 bg-slate-700 text-white rounded-xl hover:bg-slate-600 flex items-center gap-2 font-semibold shadow-lg"
+                  title="Undo last action"
+                >
+                  <Undo2 size={20} />
+                </button>
+              )}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="px-4 py-3 bg-white/20 text-white rounded-xl hover:bg-white/30 flex items-center gap-2 font-semibold shadow-lg"
+              >
+                <Tag size={20} />
+                Settings
+              </button>
+              <button
+                onClick={() => setShowMovement(true)}
+                className="px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-blue-50 flex items-center gap-2 font-semibold shadow-lg transition-all hover:scale-105"
+              >
+                <TrendingUp size={20} />
+                Movement
+              </button>
+              <button
+                onClick={() => setShowAddProduct(true)}
+                className="px-6 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 flex items-center gap-2 font-semibold shadow-lg transition-all hover:scale-105"
+              >
+                <PlusCircle size={20} />
+                Add Product
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-slate-800 rounded-xl shadow-xl mb-6 border border-slate-700">
+          <div className="flex">
+            {[
+              { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+              { id: 'products', icon: Package, label: 'Products' },
+              { id: 'movements', icon: TrendingUp, label: 'Movements' },
+              { id: 'reports', icon: FileText, label: 'Reports' }
+            ].map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 px-6 py-4 font-semibold transition-all flex items-center justify-center gap-2 ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-xl'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  <Icon size={18} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Dashboard */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {[
+                { label: 'Total Products', value: totalProducts, icon: Package, color: 'blue' },
+                { label: 'Total Units', value: totalUnits, icon: ShoppingCart, color: 'emerald' },
+                { label: 'Inventory Value', value: `$${totalValue.toFixed(0)}`, icon: DollarSign, color: 'purple' },
+                { label: 'Potential Profit', value: `$${potentialProfit.toFixed(0)}`, icon: TrendingUp, color: 'amber' },
+                { label: 'Avg Margin', value: `${avgMargin.toFixed(1)}%`, icon: BarChart3, color: 'cyan' }
+              ].map((kpi, idx) => {
+                const Icon = kpi.icon;
+                return (
+                  <div key={idx} className="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`p-3 bg-${kpi.color}-500/20 rounded-lg`}>
+                        <Icon className={`text-${kpi.color}-400`} size={24} />
+                      </div>
+                    </div>
+                    <p className="text-slate-400 text-sm mb-1">{kpi.label}</p>
+                    <p className="text-white text-2xl font-bold">{kpi.value}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Stock Status */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-xl">
+                <h3 className="text-white text-lg font-bold mb-4">Stock Status</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-4 bg-emerald-900/20 border border-emerald-700 rounded-lg">
+                    <span className="text-emerald-300 font-semibold">In Stock</span>
+                    <span className="text-emerald-400 text-2xl font-bold">{inStock.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-amber-900/20 border border-amber-700 rounded-lg">
+                    <span className="text-amber-300 font-semibold">Low Stock</span>
+                    <span className="text-amber-400 text-2xl font-bold">{lowStockItems.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-red-900/20 border border-red-700 rounded-lg">
+                    <span className="text-red-300 font-semibold">Out of Stock</span>
+                    <span className="text-red-400 text-2xl font-bold">{outOfStock.length}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Alerts */}
+              <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-xl lg:col-span-2">
+                <h3 className="text-white text-lg font-bold mb-4 flex items-center gap-2">
+                  <AlertTriangle className="text-red-400" />
+                  Critical Alerts
+                </h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {outOfStock.slice(0, 3).map(p => (
+                    <div key={p.id} className="flex justify-between items-center p-3 bg-red-900/20 border border-red-700 rounded-lg">
+                      <div>
+                        <p className="text-white font-semibold">{p.name}</p>
+                        <p className="text-red-300 text-sm">{p.sku}</p>
+                      </div>
+                      <span className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">OUT</span>
+                    </div>
+                  ))}
+                  {lowStockItems.slice(0, 5).map(p => (
+                    <div key={p.id} className="flex justify-between items-center p-3 bg-amber-900/20 border border-amber-700 rounded-lg">
+                      <div>
+                        <p className="text-white font-semibold">{p.name}</p>
+                        <p className="text-amber-300 text-sm">{p.quantity} left</p>
+                      </div>
+                      <span className="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-full">LOW</span>
+                    </div>
+                  ))}
+                  {outOfStock.length === 0 && lowStockItems.length === 0 && (
+                    <p className="text-slate-400 text-center py-8">All stock levels optimal! 🎉</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Products Tab */}
+        {activeTab === 'products' && (
+          <div className="space-y-6">
+            {/* Search and Filters */}
+            <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-xl">
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="flex-1 min-w-[300px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                    <input
+                      type="text"
+                      placeholder="Search products..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                >
+                  <option value="all">All Status</option>
+                  <option value="in-stock">In Stock</option>
+                  <option value="low">Low Stock</option>
+                  <option value="out">Out of Stock</option>
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                >
+                  <option value="name">Sort by Name</option>
+                  <option value="sku">Sort by SKU</option>
+                  <option value="quantity">Sort by Quantity</option>
+                  <option value="value">Sort by Value</option>
+                  <option value="margin">Sort by Margin</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg hover:bg-slate-600"
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+              
+              <div className="flex gap-3">
+                {selectedProducts.length > 0 && (
+                  <button
+                    onClick={bulkDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Delete ({selectedProducts.length})
+                  </button>
+                )}
+                <button
+                  onClick={exportToCSV}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2"
+                >
+                  <Download size={16} />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Products Table */}
+            <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-700/50">
+                    <tr>
+                      <th className="px-4 py-4">
+                        <button onClick={toggleSelectAll}>
+                          {selectedProducts.length === filteredProducts.length && filteredProducts.length > 0 ? 
+                            <CheckSquare className="text-blue-400" size={20} /> : 
+                            <Square className="text-slate-400" size={20} />
+                          }
+                        </button>
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">SKU</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">Product</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">Category</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-slate-300">Stock</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-slate-300">Cost</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-slate-300">Price</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-slate-300">Margin</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-slate-300">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map(p => {
+                      const margin = ((p.salePrice - p.costPrice) / p.costPrice * 100);
+                      const isSelected = selectedProducts.includes(p.id);
+                      return (
+                        <tr key={p.id} className={`border-t border-slate-700 hover:bg-slate-700/30 ${isSelected ? 'bg-blue-900/20' : ''}`}>
+                          <td className="px-4 py-4">
+                            <button onClick={() => toggleSelectProduct(p.id)}>
+                              {isSelected ? 
+                                <CheckSquare className="text-blue-400" size={20} /> : 
+                                <Square className="text-slate-400" size={20} />
+                              }
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-slate-300 font-mono text-sm">{p.sku}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-white font-semibold">{p.name}</div>
+                            {p.location && (
+                              <div className="text-slate-400 text-xs flex items-center gap-1 mt-1">
+                                <MapPin size={12} />
+                                {p.location}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            {p.category && (
+                              <span className="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-semibold rounded-full">
+                                {p.category}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className={`font-bold text-lg ${
+                              p.quantity === 0 ? 'text-red-400' :
+                              p.quantity <= p.reorderPoint ? 'text-amber-400' :
+                              'text-emerald-400'
+                            }`}>
+                              {p.quantity}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right text-slate-300">${p.costPrice.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right text-white font-semibold">${p.salePrice.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right">
+                            <span className={`font-semibold ${margin > 100 ? 'text-emerald-400' : margin > 50 ? 'text-blue-400' : 'text-slate-400'}`}>
+                              {margin.toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={() => editProduct(p)}
+                                className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => deleteProduct(p.id)}
+                                className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {filteredProducts.length === 0 && (
+                  <div className="text-center py-16 text-slate-400">
+                    <Package size={48} className="mx-auto mb-4 opacity-50" />
+                    <p className="text-lg">No products found</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Movements Tab */}
+        {activeTab === 'movements' && (
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+            <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+              <h3 className="text-white text-xl font-bold flex items-center gap-2">
+                <Calendar className="text-blue-400" />
+                Movement History
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-700/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">Date</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">Product</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">SKU</th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-slate-300">Type</th>
+                    <th className="px-6 py-4 text-right text-sm font-bold text-slate-300">Quantity</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-300">Notes</th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-slate-300">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.map(m => (
+                    <tr key={m.id} className="border-t border-slate-700 hover:bg-slate-700/30">
+                      <td className="px-6 py-4 text-slate-300">{m.date}</td>
+                      <td className="px-6 py-4 text-white font-semibold">{m.productName}</td>
+                      <td className="px-6 py-4 text-slate-400 font-mono text-sm">{m.productSku}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 ${
+                          m.type === 'in' 
+                            ? 'bg-emerald-500/20 text-emerald-400' 
+                            : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {m.type === 'in' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                          {m.type === 'in' ? 'In' : 'Out'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`text-xl font-bold ${m.type === 'in' ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {m.type === 'in' ? '+' : '-'}{m.quantity}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-400">{m.notes}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => editMovement(m)}
+                            className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteMovement(m.id)}
+                            className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {movements.length === 0 && (
+                <div className="text-center py-16 text-slate-400">
+                  <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
+                  <p className="text-lg">No movements recorded</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-slate-800 border border-slate-700 p-8 rounded-xl shadow-xl">
+                <h3 className="text-white text-2xl font-bold mb-6">Financial Summary</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700">
+                    <span className="text-slate-400">Total Products</span>
+                    <span className="text-white text-xl font-bold">{totalProducts}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700">
+                    <span className="text-slate-400">Inventory Value</span>
+                    <span className="text-emerald-400 text-xl font-bold">${totalValue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700">
+                    <span className="text-slate-400">Potential Revenue</span>
+                    <span className="text-blue-400 text-xl font-bold">${potentialRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-slate-700">
+                    <span className="text-slate-400">Potential Profit</span>
+                    <span className="text-purple-400 text-xl font-bold">${potentialProfit.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-3">
+                    <span className="text-slate-400">Tax Liability</span>
+                    <span className="text-red-400 text-xl font-bold">${totalTaxLiability.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-800 border border-slate-700 p-8 rounded-xl shadow-xl">
+                <h3 className="text-white text-2xl font-bold mb-6">Category Breakdown</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RePieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      dataKey="units"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }} />
+                  </RePieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Welcome Modal */}
+      {showWelcome && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+            <h2 className="text-3xl font-bold text-white mb-4">Welcome to Inventory Tracker! 🎉</h2>
+            <p className="text-slate-300 mb-6">
+              This system helps you track inventory, monitor stock levels, and analyze business performance. 
+              You're currently viewing demo data to explore features.
+            </p>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                <p className="text-slate-300">Demo mode lets you explore without affecting real data</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                <p className="text-slate-300">Click "Start Fresh" in settings to begin with your own inventory</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                <p className="text-slate-300">All data is saved locally in your browser</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowWelcome(false)}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 font-semibold"
+              >
+                Explore Demo
+              </button>
+              <button
+                onClick={() => {
+                  startFresh();
+                  setShowWelcome(false);
+                }}
+                className="flex-1 px-6 py-3 border border-slate-600 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
+              >
+                Start Fresh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-slate-700">
+              <h3 className="text-2xl font-bold text-white">Settings & Data Management</h3>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
+                  Low Stock Alert Threshold
+                </label>
+                <input
+                  type="number"
+                  value={lowStockThreshold}
+                  onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 10)}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                />
+              </div>
+
+              <div className="border-t border-slate-700 pt-6">
+                <h4 className="text-white font-bold mb-4">Data Management</h4>
+                <div className="space-y-3">
+                  {isDemoMode && (
+                    <button
+                      onClick={() => {
+                        switchToRealMode();
+                        setShowSettings(false);
+                      }}
+                      className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                    >
+                      <Package size={20} />
+                      Save Demo Data & Start Using
+                    </button>
+                  )}
+                  <button
+                    onClick={exportData}
+                    className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center gap-2"
+                  >
+                    <Download size={20} />
+                    Backup All Data (JSON)
+                  </button>
+                  <label className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2 cursor-pointer">
+                    <Upload size={20} />
+                    Restore from Backup
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={importData}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    onClick={() => {
+                      loadDemoData();
+                      setShowSettings(false);
+                    }}
+                    className="w-full px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw size={20} />
+                    Load Demo Data
+                  </button>
+                  <button
+                    onClick={() => {
+                      startFresh();
+                      setShowSettings(false);
+                    }}
+                    className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                  >
+                    <Trash2 size={20} />
+                    Clear All Data & Start Fresh
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-700 flex justify-end">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-6 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Product Modal */}
+      {showAddProduct && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-4xl w-full my-8">
+            <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+              <h3 className="text-2xl font-bold text-white">
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </h3>
+              <button onClick={resetProductForm} className="text-slate-400 hover:text-white">
+                <X size={28} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">SKU *</label>
+                  <input
+                    type="text"
+                    value={productForm.sku}
+                    onChange={(e) => setProductForm({...productForm, sku: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.sku ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                    placeholder="PROD-001"
+                  />
+                  {validationErrors.sku && <p className="text-red-400 text-sm mt-1">{validationErrors.sku}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Name *</label>
+                  <input
+                    type="text"
+                    value={productForm.name}
+                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.name ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                    placeholder="Product name"
+                  />
+                  {validationErrors.name && <p className="text-red-400 text-sm mt-1">{validationErrors.name}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Category</label>
+                  <input
+                    type="text"
+                    value={productForm.category}
+                    onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Quantity</label>
+                  <input
+                    type="number"
+                    value={productForm.quantity}
+                    onChange={(e) => setProductForm({...productForm, quantity: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.quantity ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                  />
+                  {validationErrors.quantity && <p className="text-red-400 text-sm mt-1">{validationErrors.quantity}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Cost Price</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={productForm.costPrice}
+                    onChange={(e) => setProductForm({...productForm, costPrice: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.costPrice ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                  />
+                  {validationErrors.costPrice && <p className="text-red-400 text-sm mt-1">{validationErrors.costPrice}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Sale Price</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={productForm.salePrice}
+                    onChange={(e) => setProductForm({...productForm, salePrice: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.salePrice ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                  />
+                  {validationErrors.salePrice && <p className="text-red-400 text-sm mt-1">{validationErrors.salePrice}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Tax Rate (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={productForm.taxRate * 100}
+                    onChange={(e) => setProductForm({...productForm, taxRate: parseFloat(e.target.value) / 100})}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Min Stock</label>
+                  <input
+                    type="number"
+                    value={productForm.minStock}
+                    onChange={(e) => setProductForm({...productForm, minStock: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Reorder Point</label>
+                  <input
+                    type="number"
+                    value={productForm.reorderPoint}
+                    onChange={(e) => setProductForm({...productForm, reorderPoint: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.reorderPoint ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                  />
+                  {validationErrors.reorderPoint && <p className="text-red-400 text-sm mt-1">{validationErrors.reorderPoint}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Max Stock</label>
+                  <input
+                    type="number"
+                    value={productForm.maxStock}
+                    onChange={(e) => setProductForm({...productForm, maxStock: e.target.value})}
+                    className={`w-full px-4 py-3 bg-slate-700 border ${validationErrors.maxStock ? 'border-red-500' : 'border-slate-600'} text-white rounded-lg`}
+                  />
+                  {validationErrors.maxStock && <p className="text-red-400 text-sm mt-1">{validationErrors.maxStock}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Supplier</label>
+                  <input
+                    type="text"
+                    value={productForm.supplier}
+                    onChange={(e) => setProductForm({...productForm, supplier: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={productForm.location}
+                    onChange={(e) => setProductForm({...productForm, location: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-700 flex justify-end gap-3">
+              <button
+                onClick={resetProductForm}
+                className="px-6 py-3 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddProduct}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-semibold"
+              >
+                {editingProduct ? 'Update' : 'Add'} Product
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Movement Modal */}
+      {showMovement && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full">
+            <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+              <h3 className="text-2xl font-bold text-white">
+                {editingMovement ? 'Edit Movement' : 'Record Movement'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowMovement(false);
+                  setEditingMovement(null);
+                  setMovementForm({
+                    productId: '', type: 'in', quantity: 0, notes: '',
+                    date: new Date().toISOString().split('T')[0]
+                  });
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={28} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Product *</label>
+                <select
+                  value={movementForm.productId}
+                  onChange={(e) => setMovementForm({...movementForm, productId: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                >
+                  <option value="">Select a product</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku}) - Stock: {p.quantity}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Type *</label>
+                <select
+                  value={movementForm.type}
+                  onChange={(e) => setMovementForm({...movementForm, type: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                >
+                  <option value="in">Stock In (Add)</option>
+                  <option value="out">Stock Out (Remove)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Quantity *</label>
+                <input
+                  type="number"
+                  value={movementForm.quantity}
+                  onChange={(e) => setMovementForm({...movementForm, quantity: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Date</label>
+                <input
+                  type="date"
+                  value={movementForm.date}
+                  onChange={(e) => setMovementForm({...movementForm, date: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Notes</label>
+                <textarea
+                  value={movementForm.notes}
+                  onChange={(e) => setMovementForm({...movementForm, notes: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg"
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-700 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowMovement(false);
+                  setEditingMovement(null);
+                  setMovementForm({
+                    productId: '', type: 'in', quantity: 0, notes: '',
+                    date: new Date().toISOString().split('T')[0]
+                  });
+                }}
+                className="px-6 py-3 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMovement}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-semibold"
+              >
+                {editingMovement ? 'Update' : 'Record'} Movement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default InventoryTracker;
