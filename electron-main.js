@@ -1,6 +1,9 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage } = require('electron');
 const path = require('path');
 
+// Disable GPU acceleration to fix Linux compatibility issues
+app.disableHardwareAcceleration();
+
 let mainWindow;
 let tray;
 

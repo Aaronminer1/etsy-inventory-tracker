@@ -1,0 +1,242 @@
+═══════════════════════════════════════════════════════════════════════
+  🏪 ETSY INVENTORY TRACKER - QUICK START GUIDE
+═══════════════════════════════════════════════════════════════════════
+
+📦 WHAT YOU'VE DOWNLOADED:
+
+A complete inventory management system that runs on your computer.
+All your data stays private - nothing uploaded to the cloud!
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 INSTALLATION (Choose Your Method)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+METHOD 1: ONE-CLICK INSTALLER (Easiest!) ⭐ RECOMMENDED
+
+Windows Users:
+  1. Double-click: Etsy-Inventory-Tracker-Setup.exe
+  2. Click "Install"
+  3. That's it! The system opens automatically
+
+Mac Users:
+  1. Double-click: Etsy-Inventory-Tracker.dmg
+  2. Drag the app to Applications folder
+  3. Double-click to launch
+
+Linux Users:
+  1. Right-click: Etsy-Inventory-Tracker.AppImage
+  2. Properties → Permissions → "Allow executing as program"
+  3. Double-click to run
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+METHOD 2: MANUAL INSTALLATION (Advanced Users)
+
+Step 1: Install Node.js
+  • Download from: https://nodejs.org/
+  • Choose "LTS" version
+  • Run installer, keep default settings
+
+Step 2: Extract Files
+  • Unzip the download to a folder
+  • Example: C:\InventoryTracker (Windows)
+            ~/InventoryTracker (Mac/Linux)
+
+Step 3: Open Terminal/Command Prompt
+  • Windows: Press Win+R, type "cmd", press Enter
+  • Mac: Press Cmd+Space, type "terminal", press Enter
+  • Linux: Press Ctrl+Alt+T
+
+Step 4: Navigate to Folder
+  cd /path/to/InventoryTracker
+  (Replace with your actual path)
+
+Step 5: Install Dependencies (First Time Only)
+  npm install
+  (Wait 1-2 minutes while it downloads packages)
+
+Step 6: Start the System
+  npm start
+
+  The browser will open automatically!
+  URL: http://localhost:5173
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════════════════
+
+📚 USING THE SYSTEM
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ADDING PRODUCTS MANUALLY:
+
+  1. Click the "➕ Add Product" button
+  2. Fill in the details:
+     • SKU (product code)
+     • Name
+     • Category
+     • Quantity
+     • Price
+     • Image URL (optional)
+  3. Click "Save"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IMPORTING FROM YOUR WEBSITE (Automated):
+
+  1. Click the "🕷️ Crawl Website" tab
+  2. Enter your website URL
+     Example: https://yourshop.com
+  3. Click "Start Crawling"
+  4. Wait for products to be found
+  5. Review and import
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MANAGING INVENTORY:
+
+  • 🔍 Search: Type in the search bar at the top
+  • 📊 Filter: Use dropdowns to filter by category/stock
+  • ✏️ Edit: Click on any product to edit
+  • 🗑️ Delete: Click the delete button
+  • 📈 Analytics: View charts and insights
+  • 💾 Export: Download your data as CSV
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+═══════════════════════════════════════════════════════════════════════
+
+🔒 YOUR DATA & PRIVACY
+
+All your inventory data is stored in:
+  📁 [installation-folder]/data/inventory.db
+
+✅ Everything stays on YOUR computer
+✅ No cloud uploads
+✅ No tracking or analytics
+✅ You own your data completely
+
+To backup your data:
+  → Copy the entire "data" folder to a safe location
+  → Do this weekly or monthly
+
+═══════════════════════════════════════════════════════════════════════
+
+❓ COMMON QUESTIONS
+
+Q: How do I restart the system?
+A: Just run "npm start" again from the folder
+
+Q: Can I use this on multiple computers?
+A: Yes! Install on each computer. Copy the "data" folder to sync.
+
+Q: What if I see an error?
+A: Check the full README.md file for troubleshooting
+
+Q: How do I update to a new version?
+A: Download the update, extract to same folder, keep the "data" folder
+
+Q: Where can I get help?
+A: Contact me through Etsy messaging or email (see README.md)
+
+═══════════════════════════════════════════════════════════════════════
+
+🛠️ TROUBLESHOOTING
+
+Problem: Browser doesn't open automatically
+Solution: Open browser manually and go to: http://localhost:5173
+
+Problem: "Port already in use" error
+Solution: Close other programs using ports 3001 or 5173
+
+Problem: Can't see products
+Solution: Refresh the page (F5) or restart the system
+
+Problem: Crawler not working
+Solution: Check your internet connection and website URL
+
+═══════════════════════════════════════════════════════════════════════
+
+💡 PRO TIPS
+
+✨ Use consistent SKU codes to avoid duplicates
+✨ Categorize products for easier filtering
+✨ Record all inventory movements for accurate tracking
+✨ Backup your data weekly
+✨ Use the search function for large inventories
+
+═══════════════════════════════════════════════════════════════════════
+
+📞 SUPPORT
+
+Need help? I'm here for you!
+
+• Etsy Messages: Contact through Etsy
+• Email: [Your email address]
+• Response Time: Usually within 24 hours
+
+Please include:
+  - Your operating system (Windows/Mac/Linux)
+  - What you were trying to do
+  - Any error messages
+  - Screenshots if possible
+
+═══════════════════════════════════════════════════════════════════════
+
+⭐ ENJOYING THE SOFTWARE?
+
+If this inventory tracker is helping your business:
+
+  ✓ Leave a review on Etsy
+  ✓ Recommend to other sellers
+  ✓ Share feedback for improvements
+
+Your success is my success! 🎉
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 WHAT'S NEXT?
+
+1. Add your first products
+2. Explore the dashboard and analytics
+3. Try the web crawler feature
+4. Set up your low stock alerts
+5. Export your data to see the CSV format
+
+═══════════════════════════════════════════════════════════════════════
+
+✨ FEATURES OVERVIEW
+
+✅ Unlimited product tracking
+✅ Automated web crawler
+✅ Smart image detection (20+ methods)
+✅ Inventory movement history
+✅ Visual charts and analytics
+✅ CSV import/export
+✅ Category management
+✅ Low stock alerts
+✅ Multi-source tracking
+✅ Search and filter
+✅ 100% private and secure
+
+═══════════════════════════════════════════════════════════════════════
+
+🎉 WELCOME TO ETSY INVENTORY TRACKER!
+
+You now have a professional-grade inventory management system.
+
+Thank you for your purchase! Happy selling! 🚀
+
+═══════════════════════════════════════════════════════════════════════
+
+Need detailed instructions?
+→ See CUSTOMER_README.md for the complete manual
+
+═══════════════════════════════════════════════════════════════════════
+
+Etsy Inventory Tracker v1.0.0
+Copyright © 2024 - All Rights Reserved
+Made with ❤️ for Etsy Sellers

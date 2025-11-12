@@ -4,10 +4,91 @@ import Dexie from 'dexie';
 export const db = new Dexie('InventoryTrackerDB');
 
 // Define database schema
+// NOTE: Only indexed fields are listed here. All other fields are automatically stored.
 db.version(1).stores({
-  products: 'id, sku, name, category, quantity, costPrice, salePrice, supplier, location, reorderPoint, lastRestocked',
-  movements: 'id, productId, type, date, timestamp',
+  products: 'id, sku, name, category',
+  movements: 'id, productId, type, date',
   settings: 'key'
+});
+
+// Version 2: Add image field as indexed
+db.version(2).stores({
+  products: 'id, sku, name, category',
+  movements: 'id, productId, type, date',
+  settings: 'key'
+});
+
+// Version 3: Add barcode, brand, model as indexed fields
+db.version(3).stores({
+  products: 'id, sku, name, category, barcode, brand, model',
+  movements: 'id, productId, type, date',
+  settings: 'key'
+});
+
+// Version 4: Simplified schema - only indexed fields (all other fields auto-stored)
+db.version(4).stores({
+  products: 'id, sku, name, category, barcode, brand, model',
+  movements: 'id, productId, type, date',
+  settings: 'key'
+}).upgrade(async tx => {
+  // Migration to ensure image field is preserved
+  console.log('Upgrading database to version 4...');
+  const products = await tx.table('products').toArray();
+  console.log('Products in DB during upgrade:', products.length);
+  if (products.length > 0) {
+    console.log('Sample product during upgrade:', products[0]);
+  }
+});
+
+// Version 5: Add sourceWebsite, crawledDate, imageStatus for better tracking
+db.version(5).stores({
+  products: 'id, sku, name, category, barcode, brand, model, sourceWebsite, imageStatus',
+  movements: 'id, productId, type, date',
+  settings: 'key'
+}).upgrade(async tx => {
+  console.log('🔄 Upgrading database to version 5 - adding source tracking...');
+  const products = await tx.table('products').toArray();
+  console.log(`📦 Migrating ${products.length} existing products...`);
+  
+  // Add new fields to existing products
+  for (const product of products) {
+    const updates = {};
+    
+    // Extract sourceWebsite from supplier or notes if not present
+    if (!product.sourceWebsite) {
+      if (product.supplier && product.supplier.includes('.')) {
+        updates.sourceWebsite = product.supplier; // Already a domain
+      } else if (product.notes && product.notes.includes('Imported from')) {
+        const match = product.notes.match(/Imported from ([^\s]+)/);
+        if (match) updates.sourceWebsite = match[1];
+      } else {
+        updates.sourceWebsite = 'unknown';
+      }
+    }
+    
+    // Set crawledDate from lastRestocked or current date
+    if (!product.crawledDate) {
+      updates.crawledDate = product.lastRestocked || new Date().toISOString().split('T')[0];
+    }
+    
+    // Check image status
+    if (!product.imageStatus) {
+      if (!product.image || product.image === '') {
+        updates.imageStatus = 'missing';
+      } else if (product.image.startsWith('http')) {
+        updates.imageStatus = 'unchecked'; // Will validate later
+      } else {
+        updates.imageStatus = 'invalid';
+      }
+    }
+    
+    // Update product if there are changes
+    if (Object.keys(updates).length > 0) {
+      await tx.table('products').update(product.id, updates);
+    }
+  }
+  
+  console.log('✅ Database migration to v5 complete!');
 });
 
 // Helper function to migrate data from localStorage to IndexedDB
