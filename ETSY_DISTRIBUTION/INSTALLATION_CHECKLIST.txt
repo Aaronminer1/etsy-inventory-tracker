@@ -1,0 +1,38 @@
+INSTALLATION VERIFICATION CHECKLIST
+====================================
+
+Before you contact support, please verify:
+
+□ Node.js is installed
+  Test: Open terminal and run: node --version
+  Should show: v16.0.0 or higher
+
+□ npm is installed
+  Test: Run: npm --version
+  Should show: 8.0.0 or higher
+
+□ You're in the correct folder
+  Test: Run: ls (Mac/Linux) or dir (Windows)
+  Should see: package.json, start.js, setup.js
+
+□ Dependencies are installed
+  Run: npm install
+  Wait for completion (1-2 minutes)
+
+□ No other applications using ports 3001 or 5173
+  Test: Run: npm start
+  Should open browser automatically
+
+□ Browser opens to http://localhost:5173
+  Should see: Etsy Inventory Tracker interface
+
+□ Can add a test product
+  Click "Add Product", fill form, save
+
+□ Data persists after restart
+  Stop system (Ctrl+C), restart (npm start)
+  Test product should still be there
+
+If all checkboxes pass: ✅ Installation successful!
+
+If any fail: Contact support with the specific step that failed.

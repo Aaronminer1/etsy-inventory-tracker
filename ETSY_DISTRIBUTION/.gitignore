@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+dist-electron/
+.vite/
+
+# User data (should be backed up separately)
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Configuration (auto-generated)
+config.json
+.setup-complete
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.cache/

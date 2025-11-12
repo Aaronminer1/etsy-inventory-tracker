@@ -1,0 +1,50 @@
+PACKAGE CONTENTS
+================
+
+This package contains everything needed to run Etsy Inventory Tracker.
+
+MAIN APPLICATION FILES:
+- package.json          - Project configuration & dependencies
+- index.html           - Main application page
+- index.css            - Styling
+- main.jsx             - Application entry point
+- InventoryTracker.jsx - Main inventory interface
+- WebsiteCrawler.jsx   - Web crawling interface
+
+BACKEND FILES:
+- crawler-server.js    - Web crawler server
+- database.js          - Database operations
+- centralDb.js         - Database API client
+
+INSTALLATION FILES:
+- setup.js             - First-time setup automation
+- start.js             - One-click launcher
+
+CONFIGURATION FILES:
+- vite.config.js       - Build tool configuration
+- tailwind.config.js   - CSS framework configuration
+- postcss.config.cjs   - CSS processing
+
+DESKTOP APP (OPTIONAL):
+- electron-main.js     - Electron desktop wrapper
+
+DOCUMENTATION:
+- README.txt           - Quick start guide (START HERE!)
+- FULL_MANUAL.txt      - Complete user manual
+- LICENSE.txt          - Software license
+- INSTALLATION_CHECKLIST.txt - Troubleshooting guide
+
+AUTO-GENERATED (on first run):
+- data/                - Your inventory database
+- config.json          - System settings
+- .setup-complete      - Setup marker
+- node_modules/        - Dependencies (from npm install)
+
+TOTAL FILES: ~15 core files + documentation
+SIZE: ~2MB (before npm install)
+SIZE: ~200MB (after npm install with dependencies)
+
+WHAT'S NOT INCLUDED:
+✗ node_modules/ - You install this with "npm install"
+✗ Database with sample data - You create your own
+✗ Developer documentation - Only customer docs included
